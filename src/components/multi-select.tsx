@@ -567,18 +567,21 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 			return deduplicateOptions ? uniqueOptions : allOptions;
 		}, [options, deduplicateOptions, isGroupedOptions]);
 
-		const getOptionByValue = React.useCallback(
-			(value: string): MultiSelectOption | undefined => {
-				const option = getAllOptions().find((option) => option.value === value);
-				if (!option && process.env.NODE_ENV === "development") {
-					console.warn(
-						`MultiSelect: Option with value "${value}" not found in options list`
-					);
-				}
-				return option;
-			},
-			[getAllOptions]
-		);
+                const getOptionByValue = React.useCallback(
+                        (value: string): MultiSelectOption | undefined => {
+                                const option = getAllOptions().find((option) => option.value === value);
+                                if (!option) {
+                                        if (process.env.NODE_ENV === "development") {
+                                                console.warn(
+                                                        `MultiSelect: Option with value "${value}" not found in options list`
+                                                );
+                                        }
+                                        return { label: value, value };
+                                }
+                                return option;
+                        },
+                        [getAllOptions]
+                );
 
 		const filteredOptions = React.useMemo(() => {
 			if (!searchable || !searchValue) return options;
@@ -604,18 +607,35 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 			);
 		}, [options, searchValue, searchable, isGroupedOptions]);
 
-		const handleInputKeyDown = (
-			event: React.KeyboardEvent<HTMLInputElement>
-		) => {
-			if (event.key === "Enter") {
-				setIsPopoverOpen(true);
-			} else if (event.key === "Backspace" && !event.currentTarget.value) {
-				const newSelectedValues = [...selectedValues];
-				newSelectedValues.pop();
-				setSelectedValues(newSelectedValues);
-				onValueChange(newSelectedValues);
-			}
-		};
+                const handleInputKeyDown = (
+                        event: React.KeyboardEvent<HTMLInputElement>
+                ) => {
+                        if (event.key === "Enter") {
+                                const newTag = searchValue.trim();
+                                if (newTag) {
+                                        event.preventDefault();
+                                        if (!selectedValues.includes(newTag)) {
+                                                const newSelectedValues = [
+                                                        ...selectedValues,
+                                                        newTag,
+                                                ];
+                                                setSelectedValues(newSelectedValues);
+                                                onValueChange(newSelectedValues);
+                                        }
+                                        setSearchValue("");
+                                        if (closeOnSelect) {
+                                                setIsPopoverOpen(false);
+                                        }
+                                } else {
+                                        setIsPopoverOpen(true);
+                                }
+                        } else if (event.key === "Backspace" && !event.currentTarget.value) {
+                                const newSelectedValues = [...selectedValues];
+                                newSelectedValues.pop();
+                                setSelectedValues(newSelectedValues);
+                                onValueChange(newSelectedValues);
+                        }
+                };
 
 		const toggleOption = (optionValue: string) => {
 			if (disabled) return;
